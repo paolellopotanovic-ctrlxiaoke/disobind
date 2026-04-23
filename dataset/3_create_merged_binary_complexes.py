@@ -1,3 +1,15 @@
+"""
+【中文解析-模块总览】
+- 中心功能：3_create_merged_binary_complexes.py 属于 Disobind 数据流水线脚本，用于数据抓取/清洗/映射/导出中的一个环节。
+- 逻辑位置：该文件在“原始数据库 -> 统一样本定义 -> 训练/评估输入文件”链条中承担局部处理任务。
+- 输入输出流水线：通常输入为数据库文件（csv/tsv/xlsx/json）、结构文件（pdb/cif）与序列标识（UniProt/PDB），输出为中间表、映射字典、模型可读输入（csv/h5/json/npy/fasta）。
+- 可选项：多数脚本支持通过构造参数或命令行参数控制版本号、并行核数、路径和过滤阈值。
+- 可视化能力：数据脚本本身通常不直接出图；如有图像分析一般在 analysis/ 目录统一完成。
+- 数据格式与实验标签：核心监督标签通常是残基-残基接触图（contact map）或界面位点（interface residues）；本目录负责把外部异构数据规范化成论文实验使用的统一格式。
+- 数据来源与论文逻辑：数据来源包含 DIBS/MFIB/DisProt/IDEAL/MobiDB/PDB/SIFTS 等；处理逻辑服务于“按二元复合体构建样本并对齐序列-结构关系”。
+- 预训练扩展建议：若做进一步预训练，建议先扩展原始来源覆盖面、统一长度分桶策略、保留更多中间质控字段（置信度/覆盖率/冲突标记），再生成更大规模弱监督样本。
+"""
+
 ############## Creating merged binary complexes.##############
 ###------> P.S. Holy Grail for the project ###################
 ####### ------>"May the Force serve u well..." <------########
@@ -36,6 +48,7 @@ warnings.filterwarnings("ignore")
 
 np.random.seed( 11 )
 
+# 【中文解析-关键函数/类入口】以下对象是本文件的主执行入口，承担数据转换主链路。
 class Dataset ():
 	def __init__ ( self, version, cores ):
 		"""
@@ -97,9 +110,7 @@ class Dataset ():
 
 		self.logger_file = f"./Logs_v_{self.version}.json"
 		self.logger = {"time_taken": {}, "counts": {}}
-
-
-
+	# 【中文解析-重点逻辑】forward 通常串联“读取输入 -> 清洗/映射 -> 导出中间/最终文件”，是该脚本最关键的数据流水线节点。
 	def forward( self ):
 		"""	
 		Create the base directory for storing the required files 
@@ -1194,3 +1205,10 @@ if __name__ == "__main__":
 
 	print( "May the Force b with u..." )
 
+"""
+【中文解析-可演化改动建议】
+1) 将硬编码路径迁移到统一配置文件（YAML/ENV）并加入路径合法性校验。
+2) 为每个中间文件增加 schema 校验（字段名/类型/范围），降低跨脚本耦合导致的隐式错误。
+3) 增加小样本 smoke test（例如 3~5 条记录）和数据快照测试，保障重构时行为一致。
+4) 若面向预训练，建议输出 token 级别元信息（来源数据库、结构置信度、对齐覆盖率）便于构建多任务标签。
+"""
